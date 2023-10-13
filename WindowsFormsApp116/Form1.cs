@@ -10,23 +10,33 @@ namespace WindowsFormsApp116
         {
             InitializeComponent();
 
-            drawingPen.StartCap = System.Drawing.Drawing2D.LineCap.Round;
+            this.MaximizeBox = false;
+            this.FormBorderStyle = FormBorderStyle.FixedSingle;
+
+            drawingPen.StartCap = System.Drawing.Drawing2D.LineCap.Round; //Для плавной отрисовки линий
             drawingPen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
 
             bitmap = new Bitmap(pictureBox1.Width, pictureBox1.Height);
+
+            g = Graphics.FromImage(bitmap);
+            g.Clear(Color.White);
 
             DoubleBuffered = true; //для плавной отрисовки
         }
 
         private bool isMouse = false;
         private Point previousPoint; // Предыдущая позиция мыши
+
         private Pen drawingPen = new Pen(Color.Black, 2); // Перо для рисования
+        private Pen figuresPen = new Pen(Color.Black, 2); //Перо для фигур
 
-        private Bitmap bitmap = new Bitmap(100, 100);
+        private Bitmap bitmap;
 
-        private Graphics square;
-        private Graphics triangle;
-        private Graphics ellipse;
+        private Graphics g;
+
+        private bool square;
+        private bool triangle;
+        private bool ellipse;
 
         private void pictureBox1_MouseMove(object sender, MouseEventArgs e)
         {
@@ -34,18 +44,24 @@ namespace WindowsFormsApp116
             {
                 Point currentPoint = e.Location;
 
-                Graphics g = pictureBox1.CreateGraphics();
                 g.DrawLine(drawingPen, previousPoint, currentPoint);
-                
+
                 previousPoint = currentPoint;
+                pictureBox1.Invalidate(); // Перерисовываем pictureBox1
             }
         }
 
         private void pictureBox1_MouseDown(object sender, MouseEventArgs e)
         {
-            isMouse = true;
-
-            previousPoint = e.Location;
+            if (square | triangle | ellipse)
+            {
+                isMouse = false;
+            }
+            else
+            {
+                isMouse = true;
+                previousPoint = e.Location;
+            }
         }
 
         private void pictureBox1_MouseUp(object sender, MouseEventArgs e)
@@ -55,12 +71,15 @@ namespace WindowsFormsApp116
 
         private void button11_Click(object sender, EventArgs e)
         {
+            g.Clear(Color.White);
+            square = triangle = ellipse = false;
             pictureBox1.Invalidate();
         }
 
         private void trackBar1_ValueChanged(object sender, EventArgs e)
         {
             drawingPen.Width = trackBar1.Value;
+            figuresPen.Width = trackBar1.Value;
         }
 
         private void button1_Click_1(object sender, EventArgs e)
@@ -89,28 +108,37 @@ namespace WindowsFormsApp116
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-            ellipse = pictureBox1.CreateGraphics();
-            square = triangle = null;
+            ellipse = true;
+            square = triangle = false;
         }
 
         private void toolStripButton2_Click(object sender, EventArgs e)
         {
-            square = pictureBox1.CreateGraphics();
-            ellipse = triangle = null;
+            square = true;
+            ellipse = triangle = false;
         }
 
         private void toolStripButton3_Click(object sender, EventArgs e)
         {
-            triangle = pictureBox1.CreateGraphics();
-            square = ellipse = null;
+            triangle = true;
+            square = ellipse = false;
         }
 
         private void pictureBox1_MouseClick(object sender, MouseEventArgs e)
         {
-            ellipse?.DrawEllipse(drawingPen, e.X, e.Y, 100, 100);
-            square?.DrawRectangle(drawingPen, e.X, e.Y, 100, 100);
+            if (square)
+            {
+                g.DrawRectangle(figuresPen, e.X, e.Y, 100, 100);
+                pictureBox1.Invalidate(); 
+            }
 
-            if (triangle != null)
+            if (ellipse)
+            {
+                g.DrawEllipse(figuresPen, e.X, e.Y, 100, 100);
+                pictureBox1.Invalidate();
+            }
+
+            if (triangle)
             {
                 DrawTriangle(e.Location);
             }
@@ -118,19 +146,17 @@ namespace WindowsFormsApp116
 
         private void DrawTriangle(Point point)
         {
-            triangle.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
             Point[] trianglePoints = new Point[] {
                 new Point(point.X, point.Y),
                 new Point(point.X + 100, point.Y),
                 new Point(point.X + 50, point.Y + 100) };
 
-            triangle.DrawPolygon(drawingPen, trianglePoints);
+            g.DrawPolygon(figuresPen, trianglePoints);
+            pictureBox1.Invalidate();
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            
             var result = saveFileDialog1.ShowDialog();
 
             if (result == DialogResult.OK)
